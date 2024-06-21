@@ -22,7 +22,7 @@ The AI-Question-Generator project aims to develop an AI-driven tool to assist te
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/AI-Question-Generator.git
+   git clone https://github.com/ckabuya/AI-Question-Generator.git
    ```
 
 2. Navigate to the project directory:
