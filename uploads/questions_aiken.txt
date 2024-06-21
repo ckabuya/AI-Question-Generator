@@ -1,0 +1,13 @@
+Key ______ Components: JFrame:
+A. Swing
+B. A graphical user interface
+C. new JTextField
+D. the focus shifts
+ANSWER: A
+
+Add ______ to the frame         add(new JLabel("Number 1:"));         add(input1);         add(new JLabel("Number 2:"));         add(input2);         add(new JLabel("Result:"));         add(result);         add(addButton);         add(subtractButton);         add(multiplyButton);         add(divideButton);
+A. electronic devices
+B. flexibility
+C. components
+D. the Java Foundation Classes
+ANSWER: C

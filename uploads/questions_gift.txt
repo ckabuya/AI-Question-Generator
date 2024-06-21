@@ -1,0 +1,116 @@
+::An array can hold many values under a single name, and ______ can access the values by referring to an index number. {
+   ~An array
+   ~a list
+   ~car names
+   =you
+}
+
+::Accessing Array Elements
+You access ______ element by referring to the index number:
+
+const cars = {
+   ~objects
+   =an array
+   ~the easiest way
+   ~"BMW
+}
+
+::Why Use Arrays? {
+   F
+}
+
+::If you have a list of items (a list of car names, for example), storing the cars in single variables could look like this:
+
+let car1 = "Saab";
+let car2 = "Volvo";
+let car3 = "BMW";
+However, what if you want to loop through the cars and find a specific one? {
+   F
+}
+
+::And what if you had not 3 cars, but 300? {
+   T
+}
+
+::The solution is an array! {
+   F
+}
+
+::An array can hold many values under a single name, and you can access the values by referring to an index number. {
+   F
+}
+
+::Creating an Array
+Using an array literal is the easiest way to create a JavaScript Array. {
+   F
+}
+
+::Syntax:
+
+const array_name {
+   T
+}
+
+::= {
+   F
+}
+
+::[item1, item2, ...];      
+It is a common practice to declare arrays with the const keyword. {
+   F
+}
+
+::Learn more about const with arrays in the chapter: JS Array Const. {
+   F
+}
+
+::Accessing Array Elements
+You access an array element by referring to the index number:
+
+const cars = {
+   T
+}
+
+::["Saab", "Volvo", "BMW"];
+let car = cars[0];
+
+Arrays are Objects
+Arrays are a special type of objects. {
+   F
+}
+
+::The typeof operator in JavaScript returns "object" for arrays. {
+   F
+}
+
+::But, JavaScript arrays are best described as arrays. {
+   F
+}
+
+::Arrays use numbers to access its "elements". {
+   T
+}
+
+::In this example, person[0] returns John:
+
+Array:
+const person = {
+   T
+}
+
+::["John", "Doe", 46]; {
+   T
+}
+
+::An array can hold many values under a single name, and ______ can access the values by referring to an index number. {
+   =you
+}
+
+::But, JavaScript ______ are best described as ______. {
+   =arrays
+}
+
+::Match the terms to their definitions. {
+   "BMW -> An array
+   the const keyword -> car names
+}
