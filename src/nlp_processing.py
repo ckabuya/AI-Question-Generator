@@ -44,6 +44,22 @@ def generate_true_false(sentences):
             questions.append(question)
     return questions
 
+def format_multiple_choice_aiken(question):
+    formatted_question = f"{question['question']}\n"
+    choices = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i, choice in enumerate(question['choices']):
+        formatted_question += f"{choices[i]}. {choice}\n"
+    correct_letter = choices[question['choices'].index(question['answer'])]
+    formatted_question += f"ANSWER: {correct_letter}\n"
+    return formatted_question
+
+def format_true_false_aiken(question):
+    formatted_question = f"{question['question']}\n"
+    correct_answer = "A. True\nB. False\nANSWER: " + ("A" if question['answer'] == "True" else "B") + "\n"
+    formatted_question += correct_answer
+    return formatted_question
+
+
 # Example usage
 if __name__ == "__main__":
     sample_text = """
@@ -55,5 +71,8 @@ if __name__ == "__main__":
     mc_questions = generate_multiple_choice(sentences, key_concepts)
     tf_questions = generate_true_false(sentences)
     
-    print("Multiple Choice Questions:", mc_questions)
-    print("True/False Questions:", tf_questions)
+    aiken_mc_questions = [format_multiple_choice_aiken(q) for q in mc_questions]
+    aiken_tf_questions = [format_true_false_aiken(q) for q in tf_questions]
+    
+    print("Aiken Multiple Choice Questions:\n", "\n".join(aiken_mc_questions))
+    print("Aiken True/False Questions:\n", "\n".join(aiken_tf_questions))
