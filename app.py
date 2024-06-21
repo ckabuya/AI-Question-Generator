@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, flash, redirect
+from flask import Flask, request, render_template, send_file, flash, redirect, url_for
 import os
 from werkzeug.utils import secure_filename
 import spacy
@@ -9,8 +9,10 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Load the SpaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -23,6 +25,7 @@ def process_text(text):
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
     key_concepts = [chunk.text for chunk in doc.noun_chunks]
     return sentences, key_concepts
+
 
 def generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
@@ -133,61 +136,59 @@ def upload_file():
 @app.route('/uploader', methods=['GET', 'POST'])
 def uploader_file():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-
-            text = extract_text_from_file(file_path)
-
-            sentences, key_concepts = process_text(text)
-            num_questions = int(request.form['num_questions'])
-            question_types = request.form.getlist('question_types')
-            difficulty = request.form.get('difficulty', 'medium')
-            topics = request.form.get('topics', '').split(',')
-
-            mc_questions = generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics) if 'mcq' in question_types else []
-            tf_questions = generate_true_false(sentences, num_questions, difficulty, topics) if 'tf' in question_types else []
-            sa_questions = generate_short_answer(sentences, key_concepts, num_questions, difficulty, topics) if 'sa' in question_types else []
-            matching_questions = generate_matching(sentences, key_concepts, num_questions, difficulty, topics) if 'matching' in question_types else []
-
-            format_choice = request.form['format']
-            if format_choice == 'aiken':
-                mc_questions_formatted = [format_multiple_choice_aiken(q) for q in mc_questions]
-                tf_questions_formatted = [format_true_false_aiken(q) for q in tf_questions]
-                output_filename = 'questions_aiken.txt'
-            else:  # GIFT format
-                mc_questions_formatted = [format_multiple_choice_gift(q) for q in mc_questions]
-                tf_questions_formatted = [format_true_false_gift(q) for q in tf_questions]
-                sa_questions_formatted = [format_short_answer_gift(q) for q in sa_questions]
-                matching_questions_formatted = [format_matching_gift(q) for q in matching_questions]
-                output_filename = 'questions_gift.txt'
-                # Combine all GIFT questions into one list
-                mc_questions_formatted.extend(tf_questions_formatted)
-                mc_questions_formatted.extend(sa_questions_formatted)
-                mc_questions_formatted.extend(matching_questions_formatted)
-
-            output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
-            with open(output_path, 'w') as out_file:
-                out_file.write("\n".join(mc_questions_formatted))
-                if format_choice == 'aiken':
-                    out_file.write("\n".join(tf_questions_formatted))
-
-            return send_file(output_path, as_attachment=True)
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                text = extract_text_from_file(file_path)
+            else:
+                flash('Invalid file type. Only .txt, .pdf, and .docx files are allowed.')
+                return redirect(request.url)
+        elif 'pasted_text' in request.form and request.form['pasted_text'].strip() != '':
+            text = request.form['pasted_text'].strip()
         else:
-            flash('Invalid file type. Only .txt, .pdf, and .docx files are allowed.')
+            flash('No file or text provided.')
             return redirect(request.url)
+
+        sentences, key_concepts = process_text(text)
+        num_questions = int(request.form['num_questions'])
+        question_types = request.form.getlist('question_types')
+        difficulty = request.form.get('difficulty', 'medium')
+        topics = request.form.get('topics', '').split(',')
+
+        mc_questions = generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics) if 'mcq' in question_types else []
+        tf_questions = generate_true_false(sentences, num_questions, difficulty, topics) if 'tf' in question_types else []
+        sa_questions = generate_short_answer(sentences, key_concepts, num_questions, difficulty, topics) if 'sa' in question_types else []
+        matching_questions = generate_matching(sentences, key_concepts, num_questions, difficulty, topics) if 'matching' in question_types else []
+
+        format_choice = request.form['format']
+        if format_choice == 'aiken':
+            mc_questions_formatted = [format_multiple_choice_aiken(q) for q in mc_questions]
+            tf_questions_formatted = [format_true_false_aiken(q) for q in tf_questions]
+            output_filename = 'questions_aiken.txt'
+        else:  # GIFT format
+            mc_questions_formatted = [format_multiple_choice_gift(q) for q in mc_questions]
+            tf_questions_formatted = [format_true_false_gift(q) for q in tf_questions]
+            sa_questions_formatted = [format_short_answer_gift(q) for q in sa_questions]
+            matching_questions_formatted = [format_matching_gift(q) for q in matching_questions]
+            output_filename = 'questions_gift.txt'
+            # Combine all GIFT questions into one list
+            mc_questions_formatted.extend(tf_questions_formatted)
+            mc_questions_formatted.extend(sa_questions_formatted)
+            mc_questions_formatted.extend(matching_questions_formatted)
+
+        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+        with open(output_path, 'w') as out_file:
+            out_file.write("\n".join(mc_questions_formatted))
+            if format_choice == 'aiken':
+                out_file.write("\n".join(tf_questions_formatted))
+
+        return send_file(output_path, as_attachment=True)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
