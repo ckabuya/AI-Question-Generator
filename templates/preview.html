@@ -30,7 +30,7 @@
             <p><strong>Choices:</strong></p>
             <ul>
                 {% for choice in question.choices %}
-                <li>{{ choice }}</li>
+                <li>{{ loop.index0 | char }}. {{ choice }}</li>
                 {% endfor %}
             </ul>
             <p><strong>Answer:</strong> {{ question.answer }}</p>
