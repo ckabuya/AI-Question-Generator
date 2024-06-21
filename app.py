@@ -3,11 +3,12 @@ import os
 from werkzeug.utils import secure_filename
 import spacy
 import random
+from src.extract_text import extract_text_from_file
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'txt'}
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -136,8 +137,7 @@ def uploader_file():
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
 
-            with open(file_path, 'r') as f:
-                text = f.read()
+            text = extract_text_from_file(file_path)
 
             sentences, key_concepts = process_text(text)
             num_questions = int(request.form['num_questions'])
@@ -172,7 +172,7 @@ def uploader_file():
 
             return send_file(output_path, as_attachment=True)
         else:
-            flash('Invalid file type. Only .txt files are allowed.')
+            flash('Invalid file type. Only .txt, .pdf, and .docx files are allowed.')
             return redirect(request.url)
 
 if __name__ == '__main__':

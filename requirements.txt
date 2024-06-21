@@ -1,4 +1,8 @@
 transformers 
-spacy 
 pdfminer.six 
 python-docx 
+Flask==2.0.2
+spacy==3.1.4
+werkzeug==2.0.2
+textract==1.6.4
+
