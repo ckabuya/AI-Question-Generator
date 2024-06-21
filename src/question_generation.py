@@ -23,3 +23,26 @@ def generate_true_false(sentences):
         }
         questions.append(question)
     return questions
+def generate_short_answer(sentences, key_concepts):
+    questions = []
+    for sentence in sentences:
+        if len(key_concepts) > 0:
+            concept = random.choice(key_concepts)
+            if concept in sentence:
+                question = {
+                    "question": sentence.replace(concept, "______"),
+                    "answer": concept
+                }
+                questions.append(question)
+    return questions
+
+def generate_matching(sentences, key_concepts):
+    questions = []
+    if len(key_concepts) >= 4:
+        pairs = random.sample(key_concepts, 4)
+        question = {
+            "question": "Match the terms to their definitions.",
+            "pairs": [(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)]
+        }
+        questions.append(question)
+    return questions

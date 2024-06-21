@@ -59,6 +59,55 @@ def format_true_false_aiken(question):
     formatted_question += correct_answer
     return formatted_question
 
+def generate_short_answer(sentences, key_concepts):
+    questions = []
+    for sentence in sentences:
+        if len(key_concepts) > 0:
+            concept = random.choice(key_concepts)
+            if concept in sentence:
+                question = {
+                    "question": sentence.replace(concept, "______"),
+                    "answer": concept
+                }
+                questions.append(question)
+    return questions
+
+def generate_matching(sentences, key_concepts):
+    questions = []
+    if len(key_concepts) >= 4:
+        pairs = random.sample(key_concepts, 4)
+        question = {
+            "question": "Match the terms to their definitions.",
+            "pairs": [(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)]
+        }
+        questions.append(question)
+    return questions
+
+def format_multiple_choice_gift(question):
+    formatted_question = f"::{question['question']} {{\n"
+    for choice in question['choices']:
+        if choice == question['answer']:
+            formatted_question += f"   ={choice}\n"
+        else:
+            formatted_question += f"   ~{choice}\n"
+    formatted_question += "}\n"
+    return formatted_question
+
+def format_true_false_gift(question):
+    answer = "T" if question['answer'] == "True" else "F"
+    formatted_question = f"::{question['question']} {{\n   {answer}\n}}\n"
+    return formatted_question
+
+def format_short_answer_gift(question):
+    formatted_question = f"::{question['question']} {{\n   ={question['answer']}\n}}\n"
+    return formatted_question
+
+def format_matching_gift(question):
+    formatted_question = f"::{question['question']} {{\n"
+    for pair in question['pairs']:
+        formatted_question += f"   {pair[0]} -> {pair[1]}\n"
+    formatted_question += "}\n"
+    return formatted_question
 
 # Example usage
 if __name__ == "__main__":
@@ -70,9 +119,20 @@ if __name__ == "__main__":
     sentences, key_concepts = process_text(sample_text)
     mc_questions = generate_multiple_choice(sentences, key_concepts)
     tf_questions = generate_true_false(sentences)
+    sa_questions = generate_short_answer(sentences, key_concepts)
+    matching_questions = generate_matching(sentences, key_concepts)
     
     aiken_mc_questions = [format_multiple_choice_aiken(q) for q in mc_questions]
     aiken_tf_questions = [format_true_false_aiken(q) for q in tf_questions]
     
+    gift_mc_questions = [format_multiple_choice_gift(q) for q in mc_questions]
+    gift_tf_questions = [format_true_false_gift(q) for q in tf_questions]
+    gift_sa_questions = [format_short_answer_gift(q) for q in sa_questions]
+    gift_matching_questions = [format_matching_gift(q) for q in matching_questions]
+    
     print("Aiken Multiple Choice Questions:\n", "\n".join(aiken_mc_questions))
     print("Aiken True/False Questions:\n", "\n".join(aiken_tf_questions))
+    print("GIFT Multiple Choice Questions:\n", "\n".join(gift_mc_questions))
+    print("GIFT True/False Questions:\n", "\n".join(gift_tf_questions))
+    print("GIFT Short Answer Questions:\n", "\n".join(gift_sa_questions))
+    print("GIFT Matching Questions:\n", "\n".join(gift_matching_questions))
