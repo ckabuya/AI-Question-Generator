@@ -1,0 +1,4 @@
+transformers 
+spacy 
+pdfminer.six 
+python-docx 
