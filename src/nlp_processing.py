@@ -1,5 +1,5 @@
-import spacy
 import random
+import spacy
 
 # Load the SpaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -9,7 +9,7 @@ def process_text(text):
     doc = nlp(text)
     
     # Extract sentences
-    sentences = [sent.text for sent in doc.sents]
+    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
     
     # Extract key concepts (nouns and proper nouns)
     key_concepts = [chunk.text for chunk in doc.noun_chunks]
@@ -20,25 +20,28 @@ def generate_multiple_choice(sentences, key_concepts):
     questions = []
     for sentence in sentences:
         if len(key_concepts) > 3:
-            correct_answer = random.choice(key_concepts)
-            wrong_answers = random.sample([concept for concept in key_concepts if concept != correct_answer], 3)
-            question = {
-                "question": sentence.replace(correct_answer, "______"),
-                "choices": wrong_answers + [correct_answer],
-                "answer": correct_answer
-            }
-            random.shuffle(question["choices"])
-            questions.append(question)
+            concept = random.choice(key_concepts)
+            if concept in sentence:
+                correct_answer = concept
+                wrong_answers = random.sample([concept for concept in key_concepts if concept != correct_answer], 3)
+                question = {
+                    "question": sentence.replace(correct_answer, "______"),
+                    "choices": wrong_answers + [correct_answer],
+                    "answer": correct_answer
+                }
+                random.shuffle(question["choices"])
+                questions.append(question)
     return questions
 
 def generate_true_false(sentences):
     questions = []
     for sentence in sentences:
-        question = {
-            "question": sentence,
-            "answer": random.choice(["True", "False"])
-        }
-        questions.append(question)
+        if sentence.strip():
+            question = {
+                "question": sentence,
+                "answer": random.choice(["True", "False"])
+            }
+            questions.append(question)
     return questions
 
 # Example usage
