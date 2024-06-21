@@ -26,7 +26,6 @@ def process_text(text):
     key_concepts = [chunk.text for chunk in doc.noun_chunks]
     return sentences, key_concepts
 
-
 def generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
     for sentence in sentences:
@@ -157,6 +156,7 @@ def uploader_file():
         question_types = request.form.getlist('question_types')
         difficulty = request.form.get('difficulty', 'medium')
         topics = request.form.get('topics', '').split(',')
+        preview = 'preview' in request.form
 
         mc_questions = generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics) if 'mcq' in question_types else []
         tf_questions = generate_true_false(sentences, num_questions, difficulty, topics) if 'tf' in question_types else []
@@ -178,6 +178,10 @@ def uploader_file():
             mc_questions_formatted.extend(tf_questions_formatted)
             mc_questions_formatted.extend(sa_questions_formatted)
             mc_questions_formatted.extend(matching_questions_formatted)
+
+        if preview:
+            preview_questions = mc_questions[:2] + tf_questions[:2] + sa_questions[:2] + matching_questions[:2]
+            return render_template('preview.html', questions=preview_questions)
 
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
         with open(output_path, 'w') as out_file:

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview Generated Questions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        h1 {
+            color: #333;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .question p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Preview Generated Questions</h1>
+    <div class="questions">
+        {% for question in questions %}
+        <div class="question">
+            <p><strong>Question:</strong> {{ question.question }}</p>
+            {% if question.choices %}
+            <p><strong>Choices:</strong></p>
+            <ul>
+                {% for choice in question.choices %}
+                <li>{{ choice }}</li>
+                {% endfor %}
+            </ul>
+            <p><strong>Answer:</strong> {{ question.answer }}</p>
+            {% elif question.answer %}
+            <p><strong>Answer:</strong> {{ question.answer }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <a href="/">Go back</a>
+</body>
+</html>
