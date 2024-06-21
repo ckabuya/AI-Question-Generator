@@ -46,7 +46,7 @@ def generate_questions_with_gpt3(prompt, num_questions):
         messages=[
             {"role": "user", "content": prompt}
         ],
-        model="gpt-3.5-turbo",
+        model="text-davinci-003",
         max_tokens=150,
         n=num_questions,
         stop=None,
