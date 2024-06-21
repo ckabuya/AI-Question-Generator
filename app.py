@@ -24,7 +24,7 @@ def process_text(text):
     key_concepts = [chunk.text for chunk in doc.noun_chunks]
     return sentences, key_concepts
 
-def generate_multiple_choice(sentences, key_concepts, num_questions):
+def generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
     for sentence in sentences:
         if len(key_concepts) > 3 and len(questions) < num_questions:
@@ -35,24 +35,28 @@ def generate_multiple_choice(sentences, key_concepts, num_questions):
                 question = {
                     "question": sentence.replace(correct_answer, "______"),
                     "choices": wrong_answers + [correct_answer],
-                    "answer": correct_answer
+                    "answer": correct_answer,
+                    "difficulty": difficulty,
+                    "topics": topics
                 }
                 random.shuffle(question["choices"])
                 questions.append(question)
     return questions
 
-def generate_true_false(sentences, num_questions):
+def generate_true_false(sentences, num_questions, difficulty, topics):
     questions = []
     for sentence in sentences:
         if sentence.strip() and len(questions) < num_questions:
             question = {
                 "question": sentence,
-                "answer": random.choice(["True", "False"])
+                "answer": random.choice(["True", "False"]),
+                "difficulty": difficulty,
+                "topics": topics
             }
             questions.append(question)
     return questions
 
-def generate_short_answer(sentences, key_concepts, num_questions):
+def generate_short_answer(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
     for sentence in sentences:
         if len(key_concepts) > 0 and len(questions) < num_questions:
@@ -60,19 +64,23 @@ def generate_short_answer(sentences, key_concepts, num_questions):
             if concept in sentence:
                 question = {
                     "question": sentence.replace(concept, "______"),
-                    "answer": concept
+                    "answer": concept,
+                    "difficulty": difficulty,
+                    "topics": topics
                 }
                 questions.append(question)
     return questions
 
-def generate_matching(sentences, key_concepts, num_questions):
+def generate_matching(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
     for _ in range(num_questions):
         if len(key_concepts) >= 4:
             pairs = random.sample(key_concepts, 4)
             question = {
                 "question": "Match the terms to their definitions.",
-                "pairs": [(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)]
+                "pairs": [(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)],
+                "difficulty": difficulty,
+                "topics": topics
             }
             questions.append(question)
     return questions
@@ -142,12 +150,14 @@ def uploader_file():
             sentences, key_concepts = process_text(text)
             num_questions = int(request.form['num_questions'])
             question_types = request.form.getlist('question_types')
-            
-            mc_questions = generate_multiple_choice(sentences, key_concepts, num_questions) if 'mcq' in question_types else []
-            tf_questions = generate_true_false(sentences, num_questions) if 'tf' in question_types else []
-            sa_questions = generate_short_answer(sentences, key_concepts, num_questions) if 'sa' in question_types else []
-            matching_questions = generate_matching(sentences, key_concepts, num_questions) if 'matching' in question_types else []
-            
+            difficulty = request.form.get('difficulty', 'medium')
+            topics = request.form.get('topics', '').split(',')
+
+            mc_questions = generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics) if 'mcq' in question_types else []
+            tf_questions = generate_true_false(sentences, num_questions, difficulty, topics) if 'tf' in question_types else []
+            sa_questions = generate_short_answer(sentences, key_concepts, num_questions, difficulty, topics) if 'sa' in question_types else []
+            matching_questions = generate_matching(sentences, key_concepts, num_questions, difficulty, topics) if 'matching' in question_types else []
+
             format_choice = request.form['format']
             if format_choice == 'aiken':
                 mc_questions_formatted = [format_multiple_choice_aiken(q) for q in mc_questions]
@@ -163,7 +173,7 @@ def uploader_file():
                 mc_questions_formatted.extend(tf_questions_formatted)
                 mc_questions_formatted.extend(sa_questions_formatted)
                 mc_questions_formatted.extend(matching_questions_formatted)
-            
+
             output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
             with open(output_path, 'w') as out_file:
                 out_file.write("\n".join(mc_questions_formatted))
