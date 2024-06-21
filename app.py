@@ -39,10 +39,11 @@ load_dotenv()
 
 # Load the OpenAI API key from environment variables or another secure location
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
+client_remote = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+#Initialize OpenAI client pointing to the local server
+client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
 def generate_questions_with_gpt3(prompt, num_questions):
-    chat_completion = client.chat.completions.create(
+    chat_completion = client_remote.chat.completions.create(
         messages=[
             {"role": "user", "content": prompt}
         ],
@@ -188,9 +189,48 @@ def format_matching_gift(question):
     formatted_question += "}\n"
     return formatted_question
 
-@app.route('/')
-def upload_file():
-    return render_template('upload.html')
+def generate_questions_with_local_model(prompt, num_questions):
+    try:
+        response = client.chat_completions.create(
+            model="lmstudio-ai/gemma-2b-it-GGUF/gemma-2b-it-q8_0.gguf",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+        questions = []
+        for choice in response.choices:
+            questions.append(choice.message['content'].strip())
+        return questions
+    except Exception as e:
+        print(f"Error generating questions: {e}")
+        return ["Error: Could not generate questions. Please try again later."]
+
+def generate_multiple_choice_with_local_model(sentences, num_questions):
+    prompt = "Generate multiple choice questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nA. <option1>\nB. <option2>\nC. <option3>\nD. <option4>\nAnswer: <correct_option>"
+    return generate_questions_with_local_model(prompt, num_questions)
+
+def generate_true_false_with_local_model(sentences, num_questions):
+    prompt = "Generate true/false questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <True/False>"
+    return generate_questions_with_local_model(prompt, num_questions)
+
+def generate_short_answer_with_local_model(sentences, num_questions):
+    prompt = "Generate short answer questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <answer>"
+    return generate_questions_with_local_model(prompt, num_questions)
+
+def generate_matching_with_local_model(sentences, num_questions):
+    prompt = "Generate matching questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <term1> -> <definition1>\n<term2> -> <definition2>\n..."
+    return generate_questions_with_local_model(prompt, num_questions)
 
 @app.route('/uploader', methods=['GET', 'POST'])
 def uploader_file():
@@ -218,10 +258,10 @@ def uploader_file():
         topics = request.form.get('topics', '').split(',')
         preview = 'preview' in request.form
 
-        mc_questions = generate_multiple_choice_with_gpt3(sentences, num_questions) if 'mcq' in question_types else []
-        tf_questions = generate_true_false_with_gpt3(sentences, num_questions) if 'tf' in question_types else []
-        sa_questions = generate_short_answer_with_gpt3(sentences, num_questions) if 'sa' in question_types else []
-        matching_questions = generate_matching_with_gpt3(sentences, num_questions) if 'matching' in question_types else []
+        mc_questions = generate_multiple_choice_with_local_model(sentences, num_questions) if 'mcq' in question_types else []
+        tf_questions = generate_true_false_with_local_model(sentences, num_questions) if 'tf' in question_types else []
+        sa_questions = generate_short_answer_with_local_model(sentences, num_questions) if 'sa' in question_types else []
+        matching_questions = generate_matching_with_local_model(sentences, num_questions) if 'matching' in question_types else []
 
         format_choice = request.form['format']
         if format_choice == 'aiken':
