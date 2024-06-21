@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import spacy
 import random
 from src.extract_text import extract_text_from_file
+from jinja2 import Environment, FileSystemLoader
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -25,6 +26,11 @@ def process_text(text):
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
     key_concepts = [chunk.text for chunk in doc.noun_chunks]
     return sentences, key_concepts
+
+def char_filter(value):
+    return chr(65 + value)
+
+app.jinja_env.filters['char'] = char_filter
 
 def generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
