@@ -141,28 +141,29 @@ def uploader_file():
             sa_questions = generate_short_answer(sentences, key_concepts)
             matching_questions = generate_matching(sentences, key_concepts)
             
-            aiken_mc_questions = [format_multiple_choice_aiken(q) for q in mc_questions]
-            aiken_tf_questions = [format_true_false_aiken(q) for q in tf_questions]
-            gift_mc_questions = [format_multiple_choice_gift(q) for q in mc_questions]
-            gift_tf_questions = [format_true_false_gift(q) for q in tf_questions]
-            gift_sa_questions = [format_short_answer_gift(q) for q in sa_questions]
-            gift_matching_questions = [format_matching_gift(q) for q in matching_questions]
+            format_choice = request.form['format']
+            if format_choice == 'aiken':
+                mc_questions_formatted = [format_multiple_choice_aiken(q) for q in mc_questions]
+                tf_questions_formatted = [format_true_false_aiken(q) for q in tf_questions]
+                output_filename = 'questions_aiken.txt'
+            else:  # GIFT format
+                mc_questions_formatted = [format_multiple_choice_gift(q) for q in mc_questions]
+                tf_questions_formatted = [format_true_false_gift(q) for q in tf_questions]
+                sa_questions_formatted = [format_short_answer_gift(q) for q in sa_questions]
+                matching_questions_formatted = [format_matching_gift(q) for q in matching_questions]
+                output_filename = 'questions_gift.txt'
+                # Combine all GIFT questions into one list
+                mc_questions_formatted.extend(tf_questions_formatted)
+                mc_questions_formatted.extend(sa_questions_formatted)
+                mc_questions_formatted.extend(matching_questions_formatted)
+            
+            output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+            with open(output_path, 'w') as out_file:
+                out_file.write("\n".join(mc_questions_formatted))
+                if format_choice == 'aiken':
+                    out_file.write("\n".join(tf_questions_formatted))
 
-            output_filename_aiken = 'questions_aiken.txt'
-            output_path_aiken = os.path.join(app.config['UPLOAD_FOLDER'], output_filename_aiken)
-            with open(output_path_aiken, 'w') as out_file:
-                out_file.write("\n".join(aiken_mc_questions))
-                out_file.write("\n".join(aiken_tf_questions))
-
-            output_filename_gift = 'questions_gift.txt'
-            output_path_gift = os.path.join(app.config['UPLOAD_FOLDER'], output_filename_gift)
-            with open(output_path_gift, 'w') as out_file:
-                out_file.write("\n".join(gift_mc_questions))
-                out_file.write("\n".join(gift_tf_questions))
-                out_file.write("\n".join(gift_sa_questions))
-                out_file.write("\n".join(gift_matching_questions))
-
-            return send_file(output_path_gift, as_attachment=True)
+            return send_file(output_path, as_attachment=True)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):

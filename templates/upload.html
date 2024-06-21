@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Text File for Question Generation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-top: 20px;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        .radio-group {
+            margin-top: 20px;
+        }
+        .radio-group label {
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Text File for Question Generation</h1>
+    <form action="/uploader" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <div class="radio-group">
+            <label>
+                <input type="radio" name="format" value="aiken" checked> Aiken
+            </label>
+            <label>
+                <input type="radio" name="format" value="gift"> GIFT
+            </label>
+        </div>
+        <input type="submit" value="Upload">
+    </form>
+</body>
+</html>
