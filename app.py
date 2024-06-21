@@ -231,7 +231,9 @@ def generate_matching_with_local_model(sentences, num_questions):
         prompt += f"- {sentence}\n"
     prompt += "\nGenerate the questions in the format:\nQ: <term1> -> <definition1>\n<term2> -> <definition2>\n..."
     return generate_questions_with_local_model(prompt, num_questions)
-
+@app.route('/')
+def upload_file():
+    return render_template('upload.html')
 @app.route('/uploader', methods=['GET', 'POST'])
 def uploader_file():
     if request.method == 'POST':
