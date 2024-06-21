@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template, send_file, flash, redirect, url_for
 import os
-import openai
+from openai import OpenAI
 from werkzeug.utils import secure_filename
 import spacy
 import random
@@ -36,21 +36,25 @@ app.jinja_env.filters['char'] = char_filter
 
 # Load environment variables from .env file
 load_dotenv()
+
 # Load the OpenAI API key from environment variables or another secure location
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def generate_questions_with_gpt3(prompt, num_questions):
-    response = openai.Completion.create(
-        model="text-davinci-003",  # Specify the model name
-        prompt=prompt,
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        model="gpt-3.5-turbo",
         max_tokens=150,
         n=num_questions,
         stop=None,
         temperature=0.7,
     )
     questions = []
-    for choice in response.choices:
-        questions.append(choice.text.strip())
+    for choice in chat_completion.choices:
+        questions.append(choice.message['content'].strip())
     return questions
 
 def generate_multiple_choice_with_gpt3(sentences, num_questions):
