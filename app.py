@@ -1,10 +1,12 @@
 from flask import Flask, request, render_template, send_file, flash, redirect, url_for
 import os
+import openai
 from werkzeug.utils import secure_filename
 import spacy
 import random
 from src.extract_text import extract_text_from_file
 from jinja2 import Environment, FileSystemLoader
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -31,6 +33,54 @@ def char_filter(value):
     return chr(65 + value)
 
 app.jinja_env.filters['char'] = char_filter
+
+# Load environment variables from .env file
+load_dotenv()
+# Load the OpenAI API key from environment variables or another secure location
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
+def generate_questions_with_gpt3(prompt, num_questions):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=150,
+        n=num_questions,
+        stop=None,
+        temperature=0.7,
+    )
+    questions = []
+    for choice in response.choices:
+        questions.append(choice.text.strip())
+    return questions
+
+def generate_multiple_choice_with_gpt3(sentences, num_questions):
+    prompt = "Generate multiple choice questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nA. <option1>\nB. <option2>\nC. <option3>\nD. <option4>\nAnswer: <correct_option>"
+    return generate_questions_with_gpt3(prompt, num_questions)
+
+def generate_true_false_with_gpt3(sentences, num_questions):
+    prompt = "Generate true/false questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <True/False>"
+    return generate_questions_with_gpt3(prompt, num_questions)
+
+def generate_short_answer_with_gpt3(sentences, num_questions):
+    prompt = "Generate short answer questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <answer>"
+    return generate_questions_with_gpt3(prompt, num_questions)
+
+def generate_matching_with_gpt3(sentences, num_questions):
+    prompt = "Generate matching questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <term1> -> <definition1>\n<term2> -> <definition2>\n..."
+    return generate_questions_with_gpt3(prompt, num_questions)
+
 
 def generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
@@ -164,10 +214,10 @@ def uploader_file():
         topics = request.form.get('topics', '').split(',')
         preview = 'preview' in request.form
 
-        mc_questions = generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics) if 'mcq' in question_types else []
-        tf_questions = generate_true_false(sentences, num_questions, difficulty, topics) if 'tf' in question_types else []
-        sa_questions = generate_short_answer(sentences, key_concepts, num_questions, difficulty, topics) if 'sa' in question_types else []
-        matching_questions = generate_matching(sentences, key_concepts, num_questions, difficulty, topics) if 'matching' in question_types else []
+        mc_questions = generate_multiple_choice_with_gpt3(sentences, num_questions) if 'mcq' in question_types else []
+        tf_questions = generate_true_false_with_gpt3(sentences, num_questions) if 'tf' in question_types else []
+        sa_questions = generate_short_answer_with_gpt3(sentences, num_questions) if 'sa' in question_types else []
+        matching_questions = generate_matching_with_gpt3(sentences, num_questions) if 'matching' in question_types else []
 
         format_choice = request.form['format']
         if format_choice == 'aiken':
