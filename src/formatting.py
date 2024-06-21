@@ -1,15 +1,15 @@
 def format_multiple_choice_aiken(question):
-    formatted_question = f"{question['question']}\n"
+    formatted_question = "{}\n".format(question['question'].replace('\n', ' '))
     choices = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     for i, choice in enumerate(question['choices']):
-        formatted_question += f"{choices[i]}. {choice}\n"
+        formatted_question += "{}. {}\n".format(choices[i], choice)
     correct_letter = choices[question['choices'].index(question['answer'])]
-    formatted_question += f"ANSWER: {correct_letter}\n"
+    formatted_question += "ANSWER: {}\n".format(correct_letter)
     return formatted_question
 
 def format_true_false_aiken(question):
-    formatted_question = f"{question['question']}\n"
-    correct_answer = "A. True\nB. False\nANSWER: " + ("A" if question['answer'] == "True" else "B") + "\n"
+    formatted_question = "{}\n".format(question['question'].replace('\n', ' '))
+    correct_answer = "A. True\nB. False\nANSWER: {}\n".format("A" if question['answer'] == "True" else "B")
     formatted_question += correct_answer
     return formatted_question
 
