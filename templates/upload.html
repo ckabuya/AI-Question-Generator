@@ -2,91 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Text File for Question Generation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-        }
-        h1 {
-            color: #333;
-        }
-        form {
-            margin-top: 20px;
-        }
-        input[type="file"] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        textarea {
-            width: 100%;
-            height: 200px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-        input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        input[type="submit"]:hover {
-            background-color: #45a049;
-        }
-        .options-group {
-            margin-top: 20px;
-        }
-        .options-group label {
-            display: block;
-            margin-bottom: 10px;
-        }
-    </style>
+    <title>AI Question Generator</title>
 </head>
 <body>
-    <h1>Upload Text File for Question Generation</h1>
+    <h1>Upload a file or paste text to generate questions</h1>
     <form action="/uploader" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <p>Or paste text below:</p>
-        <textarea name="pasted_text" placeholder="Paste your text here..."></textarea>
-        <div class="options-group">
-            <label>
-                <input type="number" name="num_questions" min="1" placeholder="Number of questions" required>
-            </label>
-            <label>
-                <input type="checkbox" name="question_types" value="mcq" checked> Multiple Choice Questions (MCQ)
-            </label>
-            <label>
-                <input type="checkbox" name="question_types" value="tf" checked> True/False Questions (T/F)
-            </label>
-            <label>
-                <input type="checkbox" name="question_types" value="sa"> Short Answer Questions
-            </label>
-            <label>
-                <input type="checkbox" name="question_types" value="matching"> Matching Questions
-            </label>
-            <label>
-                <input type="radio" name="format" value="aiken" checked> Aiken
-            </label>
-            <label>
-                <input type="radio" name="format" value="gift"> GIFT
-            </label>
-            <label>
-                <input type="text" name="difficulty" placeholder="Difficulty (easy, medium, hard)">
-            </label>
-            <label>
-                <input type="text" name="topics" placeholder="Topics (comma-separated)">
-            </label>
-            <label>
-                <input type="checkbox" name="preview" value="yes"> Preview Questions Before Downloading
-            </label>
-        </div>
-        <input type="submit" value="Upload">
+        <label for="file">Choose a file:</label>
+        <input type="file" name="file" id="file"><br><br>
+        
+        <label for="pasted_text">Or paste text:</label><br>
+        <textarea name="pasted_text" id="pasted_text" rows="10" cols="50"></textarea><br><br>
+        
+        <label for="num_questions">Number of questions:</label>
+        <input type="number" name="num_questions" id="num_questions" min="1" value="5"><br><br>
+        
+        <label for="difficulty">Difficulty:</label>
+        <select name="difficulty" id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select><br><br>
+        
+        <label for="topics">Topics (comma-separated):</label>
+        <input type="text" name="topics" id="topics"><br><br>
+        
+        <label for="question_types">Question types:</label><br>
+        <input type="checkbox" name="question_types" value="mcq"> Multiple Choice<br>
+        <input type="checkbox" name="question_types" value="tf"> True/False<br>
+        <input type="checkbox" name="question_types" value="sa"> Short Answer<br>
+        <input type="checkbox" name="question_types" value="matching"> Matching<br><br>
+        
+        <label for="format">Format:</label>
+        <select name="format" id="format">
+            <option value="aiken">Aiken</option>
+            <option value="gift">GIFT</option>
+        </select><br><br>
+
+        <label for="model">Model:</label>
+        <select name="model" id="model">
+            <option value="remote">Remote Model</option>
+            <option value="local">Local Model</option>
+            <option value="rule">Rule Based</option>
+        </select><br><br>
+        
+        <input type="checkbox" name="preview" value="preview"> Preview<br><br>
+        
+        <input type="submit" value="Upload and Generate Questions">
     </form>
 </body>
 </html>

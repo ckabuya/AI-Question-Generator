@@ -42,21 +42,48 @@ load_dotenv()
 client_remote = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 #Initialize OpenAI client pointing to the local server
 client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
+
 def generate_questions_with_gpt3(prompt, num_questions):
-    chat_completion = client_remote.chat.completions.create(
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        model="gpt-3.5-turbo-instruct",
-        max_tokens=150,
-        n=num_questions,
-        stop=None,
-        temperature=0.7,
-    )
-    questions = []
-    for choice in chat_completion.choices:
-        questions.append(choice.message['content'].strip())
-    return questions
+    try:
+        chat_completion = client_remote.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that generates multiple-choice questions."},
+                {"role": "user", "content": prompt}
+            ],
+            model="gpt-3.5-turbo-instruct",
+            max_tokens=150,
+            n=num_questions,
+            temperature=0.7,
+        )
+        
+        questions = []
+        for choice in chat_completion.choices:
+            content = choice.message.content.strip()
+            # Parse the content into the required format
+            parsed_question = parse_gpt3_response(content)
+            if parsed_question:
+                questions.append(parsed_question)
+        
+        return questions
+    except Exception as e:
+        print(f"Error generating questions with GPT-3: {e}")
+        return []
+
+def parse_gpt3_response(content):
+    lines = content.split('\n')
+    if len(lines) < 6:
+        print(f"Invalid question format: {content}")
+        return None
+    
+    question = lines[0][3:].strip() if lines[0].startswith('Q:') else lines[0]
+    choices = [line[3:].strip() for line in lines[1:5] if line.startswith(('A.', 'B.', 'C.', 'D.'))]
+    answer = lines[-1].split(':')[-1].strip() if lines[-1].startswith('Answer:') else lines[-1]
+    
+    return {
+        'question': question,
+        'choices': choices,
+        'answer': answer
+    }
 
 def generate_multiple_choice_with_gpt3(sentences, num_questions):
     prompt = "Generate multiple choice questions from the following sentences:\n\n"
@@ -149,13 +176,39 @@ def generate_matching(sentences, key_concepts, num_questions, difficulty, topics
     return questions
 
 def format_multiple_choice_aiken(question):
-    formatted_question = "{}\n".format(question['question'].replace('\n', ' '))
-    choices = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    for i, choice in enumerate(question['choices']):
-        formatted_question += "{}. {}\n".format(choices[i], choice)
-    correct_letter = choices[question['choices'].index(question['answer'])]
-    formatted_question += "ANSWER: {}\n".format(correct_letter)
-    return formatted_question
+    try:
+        formatted_question = "{}\n".format(question['question'].replace('\n', ' '))
+        choices = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        
+        for i, choice in enumerate(question['choices']):
+            formatted_question += "{}. {}\n".format(choices[i], choice)
+        
+        # Check if the answer is in the choices
+        if question['answer'] in question['choices']:
+            correct_letter = choices[question['choices'].index(question['answer'])]
+        else:
+            # If the answer is not in choices, it might be an index or letter
+            try:
+                answer_index = int(question['answer'])
+                if 0 <= answer_index < len(question['choices']):
+                    correct_letter = choices[answer_index]
+                else:
+                    raise ValueError
+            except ValueError:
+                # If it's not a valid index, use the answer as is if it's a valid choice letter
+                if question['answer'] in choices[:len(question['choices'])]:
+                    correct_letter = question['answer']
+                else:
+                    print(f"Invalid answer format: {question['answer']}")
+                    correct_letter = choices[0]  # Default to first choice if invalid
+        
+        formatted_question += "ANSWER: {}\n".format(correct_letter)
+        return formatted_question
+    except Exception as e:
+        print(f"Error formatting question: {e}")
+        print(f"Problematic question: {question}")
+        return ""  # Return empty string if there's an error
+    
 
 def format_true_false_aiken(question):
     formatted_question = "{}\n".format(question['question'].replace('\n', ' '))
@@ -191,18 +244,29 @@ def format_matching_gift(question):
 
 def generate_questions_with_local_model(prompt, num_questions):
     try:
-        response = client.chat_completions.create(
+        response = client.completions.create(
             model="lmstudio-ai/gemma-2b-it-GGUF/gemma-2b-it-q8_0.gguf",
-            messages=[{"role": "user", "content": prompt}],
+            prompt=prompt,
+            max_tokens=1000,
+            n=num_questions,
+            stop=None,
             temperature=0.7,
         )
         questions = []
         for choice in response.choices:
-            questions.append(choice.message['content'].strip())
+            text = choice.text.strip().split("\n")
+            if len(text) >= 6:
+                q = {
+                    'question': text[0][3:].strip(),  # remove "Q: "
+                    'choices': [opt[3:].strip() for opt in text[1:5]],  # remove "A. ", "B. ", "C. ", "D. "
+                    'answer': text[5].split(":")[-1].strip()  # Get everything after the colon in the answer line
+                }
+                questions.append(q)
         return questions
     except Exception as e:
         print(f"Error generating questions: {e}")
-        return ["Error: Could not generate questions. Please try again later."]
+        return []
+
 
 def generate_multiple_choice_with_local_model(sentences, num_questions):
     prompt = "Generate multiple choice questions from the following sentences:\n\n"
@@ -260,7 +324,7 @@ def uploader_file():
         topics = request.form.get('topics', '').split(',')
         preview = 'preview' in request.form
 
-        mc_questions = generate_multiple_choice_with_local_model(sentences, num_questions) if 'mcq' in question_types else []
+        mc_questions = generate_multiple_choice_with_gpt3(sentences, num_questions) if 'mcq' in question_types else []
         tf_questions = generate_true_false_with_local_model(sentences, num_questions) if 'tf' in question_types else []
         sa_questions = generate_short_answer_with_local_model(sentences, num_questions) if 'sa' in question_types else []
         matching_questions = generate_matching_with_local_model(sentences, num_questions) if 'matching' in question_types else []
@@ -297,5 +361,5 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', debug=True, port=port)
+    app.run(host=0.0.0.0,debug=True,port=port)
     
