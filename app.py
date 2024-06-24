@@ -335,10 +335,10 @@ def uploader_file():
             sa_questions = generate_short_answer_with_local_model(sentences, num_questions) if 'sa' in question_types else []
             matching_questions = generate_matching_with_local_model(sentences, num_questions) if 'matching' in question_types else []
         else: #rule based generation of questions
-            mc_questions = generate_multiple_choice(sentences, num_questions) if 'mcq' in question_types else []
-            tf_questions = generate_true_false(sentences, num_questions) if 'tf' in question_types else []
-            sa_questions = generate_short_answer(sentences, num_questions) if 'sa' in question_types else []
-            matching_questions = generate_matching(sentences, num_questions) if 'matching' in question_types else []
+            mc_questions = generate_multiple_choice(sentences, num_questions,difficulty,topics) if 'mcq' in question_types else []
+            tf_questions = generate_true_false(sentences, num_questions,,difficulty,topics) if 'tf' in question_types else []
+            sa_questions = generate_short_answer(sentences, num_questions,difficulty,topics) if 'sa' in question_types else []
+            matching_questions = generate_matching(sentences, num_questions,difficulty,topics) if 'matching' in question_types else []
        
         format_choice = request.form['format']
 
@@ -358,7 +358,7 @@ def uploader_file():
             mc_questions_formatted.extend(matching_questions_formatted)
 
         if preview:
-            preview_questions = mc_questions[:2] + tf_questions[:2] + sa_questions[:2] + matching_questions[:2]
+            preview_questions = mc_questions[:5] + tf_questions[:2] + sa_questions[:5] + matching_questions[:5]
             return render_template('preview.html', questions=preview_questions)
 
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
