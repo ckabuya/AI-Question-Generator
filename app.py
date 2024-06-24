@@ -336,7 +336,7 @@ def uploader_file():
             matching_questions = generate_matching_with_local_model(sentences, num_questions) if 'matching' in question_types else []
         else: #rule based generation of questions
             mc_questions = generate_multiple_choice(sentences, num_questions,difficulty,topics) if 'mcq' in question_types else []
-            tf_questions = generate_true_false(sentences, num_questions,,difficulty,topics) if 'tf' in question_types else []
+            tf_questions = generate_true_false(sentences, num_questions,difficulty,topics) if 'tf' in question_types else []
             sa_questions = generate_short_answer(sentences, num_questions,difficulty,topics) if 'sa' in question_types else []
             matching_questions = generate_matching(sentences, num_questions,difficulty,topics) if 'matching' in question_types else []
        
