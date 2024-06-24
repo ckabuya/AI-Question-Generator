@@ -40,8 +40,8 @@ load_dotenv()
 # Load the OpenAI API key from environment variables or another secure location
 # Initialize OpenAI client
 client_remote = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-#Initialize OpenAI client pointing to the local server
-client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
+# Initialize OpenAI client pointing to the local server
+client_local = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
 
 def generate_questions_with_gpt3(prompt, num_questions):
     try:
@@ -113,7 +113,58 @@ def generate_matching_with_gpt3(sentences, num_questions):
     prompt += "\nGenerate the questions in the format:\nQ: <term1> -> <definition1>\n<term2> -> <definition2>\n..."
     return generate_questions_with_gpt3(prompt, num_questions)
 
+def generate_questions_with_local_model(prompt, num_questions):
+    try:
+        response = client_local.completions.create(
+            model="lmstudio-ai/gemma-2b-it-GGUF/gemma-2b-it-q8_0.gguf",
+            prompt=prompt,
+            max_tokens=1000,
+            n=num_questions,
+            stop=None,
+            temperature=0.7,
+        )
+        questions = []
+        for choice in response.choices:
+            text = choice.text.strip().split("\n")
+            if len(text) >= 6:
+                q = {
+                    'question': text[0][3:].strip(),  # remove "Q: "
+                    'choices': [opt[3:].strip() for opt in text[1:5]],  # remove "A. ", "B. ", "C. ", "D. "
+                    'answer': text[5].split(":")[-1].strip()  # Get everything after the colon in the answer line
+                }
+                questions.append(q)
+        return questions
+    except Exception as e:
+        print(f"Error generating questions: {e}")
+        return []
 
+def generate_multiple_choice_with_local_model(sentences, num_questions):
+    prompt = "Generate multiple choice questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nA. <option1>\nB. <option2>\nC. <option3>\nD. <option4>\nAnswer: <correct_option>"
+    return generate_questions_with_local_model(prompt, num_questions)
+
+def generate_true_false_with_local_model(sentences, num_questions):
+    prompt = "Generate true/false questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <True/False>"
+    return generate_questions_with_local_model(prompt, num_questions)
+
+def generate_short_answer_with_local_model(sentences, num_questions):
+    prompt = "Generate short answer questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <answer>"
+    return generate_questions_with_local_model(prompt, num_questions)
+
+def generate_matching_with_local_model(sentences, num_questions):
+    prompt = "Generate matching questions from the following sentences:\n\n"
+    for sentence in sentences:
+        prompt += f"- {sentence}\n"
+    prompt += "\nGenerate the questions in the format:\nQ: <term1> -> <definition1>\n<term2> -> <definition2>\n..."
+    return generate_questions_with_local_model(prompt, num_questions)
 def generate_multiple_choice(sentences, key_concepts, num_questions, difficulty, topics):
     questions = []
     for sentence in sentences:
@@ -242,59 +293,6 @@ def format_matching_gift(question):
     formatted_question += "}\n"
     return formatted_question
 
-def generate_questions_with_local_model(prompt, num_questions):
-    try:
-        response = client.completions.create(
-            model="lmstudio-ai/gemma-2b-it-GGUF/gemma-2b-it-q8_0.gguf",
-            prompt=prompt,
-            max_tokens=1000,
-            n=num_questions,
-            stop=None,
-            temperature=0.7,
-        )
-        questions = []
-        for choice in response.choices:
-            text = choice.text.strip().split("\n")
-            if len(text) >= 6:
-                q = {
-                    'question': text[0][3:].strip(),  # remove "Q: "
-                    'choices': [opt[3:].strip() for opt in text[1:5]],  # remove "A. ", "B. ", "C. ", "D. "
-                    'answer': text[5].split(":")[-1].strip()  # Get everything after the colon in the answer line
-                }
-                questions.append(q)
-        return questions
-    except Exception as e:
-        print(f"Error generating questions: {e}")
-        return []
-
-
-def generate_multiple_choice_with_local_model(sentences, num_questions):
-    prompt = "Generate multiple choice questions from the following sentences:\n\n"
-    for sentence in sentences:
-        prompt += f"- {sentence}\n"
-    prompt += "\nGenerate the questions in the format:\nQ: <question>\nA. <option1>\nB. <option2>\nC. <option3>\nD. <option4>\nAnswer: <correct_option>"
-    return generate_questions_with_local_model(prompt, num_questions)
-
-def generate_true_false_with_local_model(sentences, num_questions):
-    prompt = "Generate true/false questions from the following sentences:\n\n"
-    for sentence in sentences:
-        prompt += f"- {sentence}\n"
-    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <True/False>"
-    return generate_questions_with_local_model(prompt, num_questions)
-
-def generate_short_answer_with_local_model(sentences, num_questions):
-    prompt = "Generate short answer questions from the following sentences:\n\n"
-    for sentence in sentences:
-        prompt += f"- {sentence}\n"
-    prompt += "\nGenerate the questions in the format:\nQ: <question>\nAnswer: <answer>"
-    return generate_questions_with_local_model(prompt, num_questions)
-
-def generate_matching_with_local_model(sentences, num_questions):
-    prompt = "Generate matching questions from the following sentences:\n\n"
-    for sentence in sentences:
-        prompt += f"- {sentence}\n"
-    prompt += "\nGenerate the questions in the format:\nQ: <term1> -> <definition1>\n<term2> -> <definition2>\n..."
-    return generate_questions_with_local_model(prompt, num_questions)
 @app.route('/')
 def upload_file():
     return render_template('upload.html')
@@ -317,19 +315,33 @@ def uploader_file():
             flash('No file or text provided.')
             return redirect(request.url)
 
+        # Clear the data before generating questions
         sentences, key_concepts = process_text(text)
         num_questions = int(request.form['num_questions'])
         question_types = request.form.getlist('question_types')
         difficulty = request.form.get('difficulty', 'medium')
         topics = request.form.get('topics', '').split(',')
         preview = 'preview' in request.form
+        model_choice = request.form.get('model', 'remote')
 
-        mc_questions = generate_multiple_choice_with_gpt3(sentences, num_questions) if 'mcq' in question_types else []
-        tf_questions = generate_true_false_with_local_model(sentences, num_questions) if 'tf' in question_types else []
-        sa_questions = generate_short_answer_with_local_model(sentences, num_questions) if 'sa' in question_types else []
-        matching_questions = generate_matching_with_local_model(sentences, num_questions) if 'matching' in question_types else []
-
+        if model_choice == 'remote': # use an LLM
+            mc_questions = generate_multiple_choice_with_gpt3(sentences, num_questions) if 'mcq' in question_types else []
+            tf_questions = generate_true_false_with_gpt3(sentences, num_questions) if 'tf' in question_types else []
+            sa_questions = generate_short_answer_with_gpt3(sentences, num_questions) if 'sa' in question_types else []
+            matching_questions = generate_matching_with_gpt3(sentences, num_questions) if 'matching' in question_types else []
+        elif model_choice == 'local': # local based generation
+            mc_questions = generate_multiple_choice_with_local_model(sentences, num_questions) if 'mcq' in question_types else []
+            tf_questions = generate_true_false_with_local_model(sentences, num_questions) if 'tf' in question_types else []
+            sa_questions = generate_short_answer_with_local_model(sentences, num_questions) if 'sa' in question_types else []
+            matching_questions = generate_matching_with_local_model(sentences, num_questions) if 'matching' in question_types else []
+        else: #rule based generation of questions
+            mc_questions = generate_multiple_choice(sentences, num_questions) if 'mcq' in question_types else []
+            tf_questions = generate_true_false(sentences, num_questions) if 'tf' in question_types else []
+            sa_questions = generate_short_answer(sentences, num_questions) if 'sa' in question_types else []
+            matching_questions = generate_matching(sentences, num_questions) if 'matching' in question_types else []
+       
         format_choice = request.form['format']
+
         if format_choice == 'aiken':
             mc_questions_formatted = [format_multiple_choice_aiken(q) for q in mc_questions]
             tf_questions_formatted = [format_true_false_aiken(q) for q in tf_questions]
@@ -361,5 +373,4 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     port = int(os.environ.get('PORT', 5000))
-    app.run(host=0.0.0.0,debug=True,port=port)
-    
+    app.run(host='0.0.0.0',debug=True, port=port)
